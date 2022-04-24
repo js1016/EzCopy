@@ -1,7 +1,6 @@
 param (
     [string]$FilePath,
     [string]$BlobPath,
-    [string]$SasToken,
     [string]$FileHash = "none",
     [switch]$Custom = $false
 )
@@ -17,8 +16,28 @@ class AzCopyResult {
     }
 }
 $azCopyResult = [AzCopyResult]::new()
+$SasToken = ""
 $fileItem = Get-ChildItem $FilePath
 $fileName = $fileItem.Name
+
+$sasFile = $env:LOCALAPPDATA + "\EzCopy\sas.txt"
+$azCopy = $env:LOCALAPPDATA + "\EzCopy\azcopy.exe"
+$sasLines = Get-Content -Path $sasFile -ErrorAction SilentlyContinue
+foreach ($sasLine in $sasLines) {
+    if ($sasLine.StartsWith($BlobPath)) {
+        [SecureString]$sasSecureStr = $sasLine.split(" ")[1] | ConvertTo-SecureString
+        $ptr = [System.Runtime.InteropServices.Marshal]::SecureStringToCoTaskMemUnicode($sasSecureStr)
+        $SasToken = [System.Runtime.InteropServices.Marshal]::PtrToStringUni($ptr)
+        [System.Runtime.InteropServices.Marshal]::ZeroFreeCoTaskMemUnicode($ptr)
+        break
+    }
+}
+
+if (!(Test-Path -Path $azCopy) -Or $SasToken -eq "") {
+    Write-Host "`nEzCopy is not configured correctly, please reinstall EzCopy.`n`nPress any key to exit"
+    $host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+    exit
+}
 
 if ($Custom) {
     $md5Name = (Get-FileHash -Path $FilePath -Algorithm 'md5').Hash
@@ -72,10 +91,14 @@ Write-Host " to " -NoNewline
 Write-Host $BlobPath -ForegroundColor "Cyan" -NoNewline
 Write-Host ", please wait...`n"
 
-$azCopyResult.Raw = (azcopy.exe copy $FilePath $UrlPath$SasToken) | Out-String
+$cmd = $azCopy + " copy " + $FilePath + " " + $UrlPath + $SasToken
+$cmd = $cmd.Replace('&', '"&"')
+$azCopyResult.Raw = Invoke-Expression $cmd | Out-String
 [Collections.Generic.List[String]]$lines = $azCopyResult.Raw.Split([System.Environment]::NewLine)
 
 $lines.RemoveAll({ param($line) !$line.Length }) | Out-Null
+
+
 
 for ($i = 0; $i -lt $lines.Count; $i++) {
     $line = $lines[$i]
