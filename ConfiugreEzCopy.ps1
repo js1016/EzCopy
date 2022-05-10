@@ -1,6 +1,15 @@
 param(
-    [switch]$DoInstall = $true
+    [switch]$Install = $false,
+    [switch]$Update = $false,
+    [switch]$Uninstall = $false,
+    [switch]$Configure = $false
 )
+$ErrorActionPreference = "Stop"
+$global:Entries = @()
+# $global:Entries = @(
+#     @{BlobPath = ""; SasToken = "" }
+#     @{BlobPath = ""; SasToken = "" }
+# )
 
 $OSArchitecture = (Get-CimInstance -ClassName win32_operatingsystem).OSArchitecture
 $EzCopyDirectory = $env:LOCALAPPDATA + "\EzCopy\"
@@ -12,13 +21,9 @@ if ($OSArchitecture.StartsWith("64")) {
     $AzCopyDownloadPath = "https://aka.ms/downloadazcopy-v10-windows"
 }
 
-function Download-AzCopy {
+function Get-AzCopy {
     Write-Host "Downloading AzCopy.exe to $($EzCopyDirectory)"
     Start-BitsTransfer $AzCopyDownloadPath $AzCopySavePath
-    if (!(Test-Path -Path $AzCopySavePath -PathType Leaf)) {
-        Write-Host "Failed to download AzCopy"
-        return $false
-    }
     Expand-Archive -Path $AzCopySavePath -DestinationPath $EzCopyDirectory -Force
     $findResult = Get-ChildItem -Path $EzCopyDirectory -Filter "azcopy.exe" -Recurse
     if ($findResult) {
@@ -44,34 +49,153 @@ function Download-AzCopy {
         }
     }
     else {
-        Write-Host "Did not find azcopy.exe after extraction"
         Remove-Item -Path $AzCopySavePath
-        return $false
+        throw "Did not find azcopy.exe after extraction"
     }
     Remove-Item -Path $AzCopySavePath
-    return $true
 }
 
-function Download-EzCopy {
+function Get-EzCopy {
     Write-Host "Downloading EzCopy to $($EzCopyDirectory)"
     Start-BitsTransfer $EzCopyDownloadPath $EzCopySavePath
-    if (!(Test-Path -Path $EzCopySavePath -PathType Leaf)) {
-        return $false
+}
+
+function Uninstall-EzCopy {
+    Remove-Item -LiteralPath $EzCopyDirectory -Recurse -Force -ErrorAction SilentlyContinue | Out-Null
+    Remove-Item -LiteralPath "HKCU:\SOFTWARE\Classes\*\shell\EzCopy" -Force -Recurse
+}
+
+function Update-EzCopy {
+    if (Test-Path $EzCopyDirectory) {
+        Write-Host "Updating EzCopy..."
+        Get-AzCopy
+        Get-EzCopy
     }
-    return $true
+    else {
+        throw "EzCopy is not installed, please install it first."
+    }
 }
 
 function Install-EzCopy { 
-    Write-Host "Creating EzCopy directory: $($EzCopyDirectory)"
+    Write-Host "Installing EzCopy..."
     New-Item -Path $env:LOCALAPPDATA -Name "EzCopy" -ItemType "Directory" -Force | Out-Null
-    if (!(Download-AzCopy)) {
-    }
-    if (!(Download-EzCopy)) {
-        
-    }
+    Get-AzCopy
+    Get-EzCopy
+    Set-EzCopy
 }
 
-if ($DoInstall) {
-    Install-EzCopy
+function Set-EzCopy {
+    if ($global:Entries.Count -eq 0) {
+        $firstOrSecondOrThird = "first"
+        $continue = $true
+        Write-Host "You can configure up to three different containers or paths as upload entries in context menu."
+        while ($continue) {
+            $blobPathUri = [uri](Read-Host -Prompt "Let's configure the $($firstOrSecondOrThird) upload entry, please input the default upload path (example: https://contoso.blob.core.windows.net/container/optionalpath/)")
+            $blobPath = ""
+            $testBlobPathResult = Test-BlobPath($blobPathUri)
+            while ($testBlobPathResult.Length) {
+                Write-Host "Invalid upload path: $($testBlobPathResult)" -ForegroundColor Red
+                $blobPathUri = [uri](Read-Host -Prompt "Please input the default upload path")
+                $testBlobPathResult = Test-BlobPath($blobPathUri)
+            }
+            if ($blobPathUri.Query.Length) {
+                $blobPath = $blobPathUri.AbsoluteUri.Replace($blobPathUri.Query, "")
+            }
+            else {
+                $blobPath = $blobPathUri.AbsoluteUri.Replace($blobPathUri.AbsoluteUri.Substring($blobPathUri.AbsoluteUri.IndexOf("/", 8)), $blobPathUri.AbsolutePath)
+            }
+            if (!$blobPath.EndsWith("/")) {
+                $blobPath = $blobPath += "/"
+            }
+            $sasToken = Read-Host -Prompt "Please input the SAS token for the URL: $($blobPath)"
+            $global:Entries += @{BlobPath = $blobPath; SasToken = $sasToken }
+            if ($global:Entries.Count -lt 3) {
+                $continueInput = Read-Host -Prompt "Do you want to configure another upload entry? Please input (Y) or (N)"
+                if ($continueInput.ToLower() -eq "y") {
+                    $continue = $true
+                    if ($global:Entries.Count -eq 1) {
+                        $firstOrSecondOrThird = "second"
+                    }
+                    elseif ($global:Entries.Count -eq 2) {
+                        $firstOrSecondOrThird = "third"
+                    }
+                }
+                else {
+                    $continue = $false
+                }
+            }
+            else {
+                $continue = $false
+            }
+        }
+    }
+    Remove-Item -LiteralPath "HKCU:\SOFTWARE\Classes\*\shell\EzCopy" -Force -Recurse
+    New-Item "HKCU:\SOFTWARE\Classes\*\shell\EzCopy\" -Force | Out-Null
+    New-ItemProperty -LiteralPath "HKCU:\SOFTWARE\Classes\*\shell\EzCopy" -Name "subcommands" -Value "" -Force | Out-Null
+    New-ItemProperty -LiteralPath "HKCU:\SOFTWARE\Classes\*\shell\EzCopy" -Name "MUIVerb" -Value "EzCopy" -Force | Out-Null
+    $sasFileContent = ""
+    for ($i = 0; $i -lt $global:Entries.Count -and $i -lt 3; $i++) {
+        $entry = $global:Entries[$i]
+        $entryRegPath = "HKCU:\SOFTWARE\Classes\*\shell\EzCopy\shell\blob$($i+1)\"
+        New-Item "$($entryRegPath)shell\1\command" -Force | Out-Null
+        New-Item "$($entryRegPath)shell\2\command" -Force | Out-Null
+        New-Item "$($entryRegPath)shell\3\command" -Force | Out-Null
+        New-Item "$($entryRegPath)shell\4\command" -Force | Out-Null
+        New-ItemProperty -LiteralPath $entryRegPath -Name "subcommands" -Value "" -Force | Out-Null
+        New-ItemProperty -LiteralPath $entryRegPath -Name "MUIVerb" -Value "Upload to $($entry.BlobPath)" -Force | Out-Null
+        New-ItemProperty -LiteralPath "$($entryRegPath)shell\1\" -Name "MUIVerb" -Value "Keep original file name" -Force | Out-Null
+        New-ItemProperty -LiteralPath "$($entryRegPath)shell\2\" -Name "MUIVerb" -Value "Use MD5 hash as file name" -Force | Out-Null
+        New-ItemProperty -LiteralPath "$($entryRegPath)shell\3\" -Name "MUIVerb" -Value "Use SHA256 hash as file name" -Force | Out-Null
+        New-ItemProperty -LiteralPath "$($entryRegPath)shell\4\" -Name "MUIVerb" -Value "Customize path and file name" -Force | Out-Null
+        Set-ItemProperty -LiteralPath "$($entryRegPath)shell\1\command" -Name "(Default)" -Type "ExpandString" -Value "powershell %localappdata%\\EzCopy\\EzCopy.ps1 -FilePath '%1' -BlobPath '$($entry.BlobPath)'"
+        Set-ItemProperty -LiteralPath "$($entryRegPath)shell\2\command" -Name "(Default)" -Type "ExpandString" -Value "powershell %localappdata%\\EzCopy\\EzCopy.ps1 -FilePath '%1' -BlobPath '$($entry.BlobPath)' -FileHash md5"
+        Set-ItemProperty -LiteralPath "$($entryRegPath)shell\3\command" -Name "(Default)" -Type "ExpandString" -Value "powershell %localappdata%\\EzCopy\\EzCopy.ps1 -FilePath '%1' -BlobPath '$($entry.BlobPath)' -FileHash sha256"
+        Set-ItemProperty -LiteralPath "$($entryRegPath)shell\4\command" -Name "(Default)" -Type "ExpandString" -Value "powershell %localappdata%\\EzCopy\\EzCopy.ps1 -FilePath '%1' -BlobPath '$($entry.BlobPath)' -Custom"
+        $sasFileContent += "$($entry.BlobPath) $($entry.SasToken | ConvertTo-SecureString -AsPlainText -Force | ConvertFrom-SecureString)`n"
+    }
+    New-Item -Path $EzCopyDirectory"sas.txt" -ItemType "File" -Value $sasFileContent -Force | Out-Null
 }
-Read-Host
+
+function Test-BlobPath {
+    param(
+        [uri] $blobPath
+    )
+    $testBlobPathResult = ""
+    if ($blobPath.LocalPath.Length -lt 2) {
+        $testBlobPathResult = "The upload path could not be your root blob URL, you need to specify the container in the path like: https://contoso.blob.core.windows.net/container/"
+    }
+    elseif (!$blobPath.Scheme.StartsWith("http")) {
+        $testBlobPathResult = "The blob path should start with 'http'."
+    }
+    return $testBlobPathResult
+}
+
+if ($Install) {
+    try {
+        Install-EzCopy
+        Write-Host "EzCopy is installed successfully!" -ForegroundColor Green
+    }
+    catch {
+        Write-Host "Installing EzCopy failed with error: $($_)" -ForegroundColor Red
+        Write-Host "ScriptStackTrace: `n$($_.ScriptStackTrace)" -ForegroundColor Red
+    }
+}
+elseif ($Update) {
+    try {
+        Update-EzCopy
+        Write-Host "EzCopy is updated successfully!" -ForegroundColor Green
+    }
+    catch {
+        Write-Host "Updating EzCopy failed with error: $($_)" -ForegroundColor Red
+        Write-Host "ScriptStackTrace: `n$($_.ScriptStackTrace)" -ForegroundColor Red
+    }
+}
+elseif ($Uninstall) {
+    Uninstall-EzCopy
+    Write-Host "EzCopy is removed successfully!" -ForegroundColor Green
+}
+elseif ($Configure) {
+    $global:Entries = @()
+    Set-EzCopy
+    Write-Host "EzCopy is configured successfully!" -ForegroundColor Green
+}
