@@ -11,9 +11,6 @@ class AzCopyResult {
     [string]$ErrorDescription
     [string]$ResponseStatus
     [string]$Raw
-    [string]ToString() {
-        return ("Final Job Status: {0}`nLog file: {1}`nError Description: {2}`nResponse Status: {3}" -f $this.FinalJobStatus, $this.Logfile, $this.ErrorDescription, $this.ResponseStatus)
-    }
 }
 $azCopyResult = [AzCopyResult]::new()
 $SasToken = ""
@@ -31,6 +28,10 @@ foreach ($sasLine in $sasLines) {
         [System.Runtime.InteropServices.Marshal]::ZeroFreeCoTaskMemUnicode($ptr)
         break
     }
+}
+
+if (!$SasToken.StartsWith("?")) {
+    $SasToken = "?$($SasToken)"
 }
 
 if (!(Test-Path -Path $azCopy) -Or $SasToken -eq "") {
@@ -114,6 +115,9 @@ for ($i = 0; $i -lt $lines.Count; $i++) {
     elseif ($line.Trim().StartsWith("RESPONSE Status: ")) {
         $azCopyResult.ResponseStatus = $line.Trim().Substring("RESPONSE Status: ".Length)
     }
+    elseif ($line.StartsWith("failed to")) {
+        $azCopyResult.ErrorDescription = $line
+    }
 }
 
 if ($azCopyResult.FinalJobStatus -eq "Completed") {
@@ -135,16 +139,25 @@ if ($azCopyResult.FinalJobStatus -eq "Completed") {
     Write-Host $UrlPath -ForegroundColor "Cyan"
 }
 else {
-    Write-Host "Failed to copy file" -ForegroundColor "Red"
-    Write-Host "`nFinal Job status: " -NoNewline
-    Write-Host $azCopyResult.FinalJobStatus -ForegroundColor "Red"
-    Write-Host "`nError description: " -NoNewline
-    Write-Host $azCopyResult.ErrorDescription -ForegroundColor "Red"
-    Write-Host "`nResponse Status: " -NoNewline
-    Write-Host $azCopyResult.ResponseStatus -ForegroundColor "Red"
-    Write-Host "`nYou may find more error details at: " -NoNewline
-    Write-Host $azCopyResult.Logfile -ForegroundColor "Cyan"
+    Write-Host "Failed to copy file. " -ForegroundColor "Red" -NoNewline
+    Write-Host "Command: $($cmd)"
+    if ($null -ne $azCopyResult.FinalJobStatus) {
+        Write-Host "`nFinal Job status: " -NoNewline
+        Write-Host $azCopyResult.FinalJobStatus -ForegroundColor "Red"
+    }
+    if ($null -ne $azCopyResult.ErrorDescription) {
+        Write-Host "`nError description: " -NoNewline
+        Write-Host $azCopyResult.ErrorDescription -ForegroundColor "Red"
+    }
+    if ($null -ne $azCopyResult.ResponseStatus) {
+        Write-Host "`nResponse Status: " -NoNewline
+        Write-Host $azCopyResult.ResponseStatus -ForegroundColor "Red"
+    }
+    if ($null -ne $azCopyResult.Logfile) {
+        Write-Host "`nYou may find more error details at: " -NoNewline
+        Write-Host $azCopyResult.Logfile -ForegroundColor "Cyan"
+    }
 }
 
 Write-Host "`nPress any key to exit"
-$host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+$host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown") | Out-Null
