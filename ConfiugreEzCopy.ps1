@@ -20,6 +20,10 @@ $AzCopySavePath = $EzCopyDirectory + "AzCopy.zip"
 if ($OSArchitecture.StartsWith("64")) {
     $AzCopyDownloadPath = "https://aka.ms/downloadazcopy-v10-windows"
 }
+$PSCommand = "powershell"
+if ($PSVersionTable.PSEdition -eq "Core") {
+    $PSCommand = "pwsh"
+}
 
 function Get-AzCopy {
     Write-Host "Downloading AzCopy.exe to $($EzCopyDirectory)"
@@ -129,7 +133,7 @@ function Set-EzCopy {
             }
         }
     }
-    Remove-Item -LiteralPath "HKCU:\SOFTWARE\Classes\*\shell\EzCopy" -Force -Recurse
+    Remove-Item -LiteralPath "HKCU:\SOFTWARE\Classes\*\shell\EzCopy" -Force -Recurse -ErrorAction SilentlyContinue
     New-Item "HKCU:\SOFTWARE\Classes\*\shell\EzCopy\" -Force | Out-Null
     New-ItemProperty -LiteralPath "HKCU:\SOFTWARE\Classes\*\shell\EzCopy" -Name "subcommands" -Value "" -Force | Out-Null
     New-ItemProperty -LiteralPath "HKCU:\SOFTWARE\Classes\*\shell\EzCopy" -Name "MUIVerb" -Value "EzCopy" -Force | Out-Null
@@ -147,10 +151,10 @@ function Set-EzCopy {
         New-ItemProperty -LiteralPath "$($entryRegPath)shell\2\" -Name "MUIVerb" -Value "Use MD5 hash as file name" -Force | Out-Null
         New-ItemProperty -LiteralPath "$($entryRegPath)shell\3\" -Name "MUIVerb" -Value "Use SHA256 hash as file name" -Force | Out-Null
         New-ItemProperty -LiteralPath "$($entryRegPath)shell\4\" -Name "MUIVerb" -Value "Customize path and file name" -Force | Out-Null
-        Set-ItemProperty -LiteralPath "$($entryRegPath)shell\1\command" -Name "(Default)" -Type "ExpandString" -Value "powershell %localappdata%\\EzCopy\\EzCopy.ps1 -FilePath '%1' -BlobPath '$($entry.BlobPath)'"
-        Set-ItemProperty -LiteralPath "$($entryRegPath)shell\2\command" -Name "(Default)" -Type "ExpandString" -Value "powershell %localappdata%\\EzCopy\\EzCopy.ps1 -FilePath '%1' -BlobPath '$($entry.BlobPath)' -FileHash md5"
-        Set-ItemProperty -LiteralPath "$($entryRegPath)shell\3\command" -Name "(Default)" -Type "ExpandString" -Value "powershell %localappdata%\\EzCopy\\EzCopy.ps1 -FilePath '%1' -BlobPath '$($entry.BlobPath)' -FileHash sha256"
-        Set-ItemProperty -LiteralPath "$($entryRegPath)shell\4\command" -Name "(Default)" -Type "ExpandString" -Value "powershell %localappdata%\\EzCopy\\EzCopy.ps1 -FilePath '%1' -BlobPath '$($entry.BlobPath)' -Custom"
+        Set-ItemProperty -LiteralPath "$($entryRegPath)shell\1\command" -Name "(Default)" -Type "ExpandString" -Value "$($PSCommand) %localappdata%\\EzCopy\\EzCopy.ps1 -FilePath ""%1"" -BlobPath ""$($entry.BlobPath)"""
+        Set-ItemProperty -LiteralPath "$($entryRegPath)shell\2\command" -Name "(Default)" -Type "ExpandString" -Value "$($PSCommand) %localappdata%\\EzCopy\\EzCopy.ps1 -FilePath ""%1"" -BlobPath ""$($entry.BlobPath)"" -FileHash md5"
+        Set-ItemProperty -LiteralPath "$($entryRegPath)shell\3\command" -Name "(Default)" -Type "ExpandString" -Value "$($PSCommand) %localappdata%\\EzCopy\\EzCopy.ps1 -FilePath ""%1"" -BlobPath ""$($entry.BlobPath)"" -FileHash sha256"
+        Set-ItemProperty -LiteralPath "$($entryRegPath)shell\4\command" -Name "(Default)" -Type "ExpandString" -Value "$($PSCommand) %localappdata%\\EzCopy\\EzCopy.ps1 -FilePath ""%1"" -BlobPath ""$($entry.BlobPath)"" -Custom"
         $sasFileContent += "$($entry.BlobPath) $($entry.SasToken | ConvertTo-SecureString -AsPlainText -Force | ConvertFrom-SecureString)`n"
     }
     New-Item -Path $EzCopyDirectory"sas.txt" -ItemType "File" -Value $sasFileContent -Force | Out-Null
