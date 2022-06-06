@@ -163,7 +163,7 @@ $azCopy = $env:LOCALAPPDATA + "\EzCopy\azcopy.exe"
 $sasLines = Get-Content -Path $sasFile -ErrorAction SilentlyContinue
 foreach ($sasLine in $sasLines) {
     if ($sasLine.StartsWith($BlobPath)) {
-        [SecureString]$sasSecureStr = $sasLine.split(" ")[1] | ConvertTo-SecureString
+        $sasSecureStr = $sasLine.split(" ")[1] | ConvertTo-SecureString
         $ptr = [System.Runtime.InteropServices.Marshal]::SecureStringToCoTaskMemUnicode($sasSecureStr)
         $SasToken = [System.Runtime.InteropServices.Marshal]::PtrToStringUni($ptr)
         [System.Runtime.InteropServices.Marshal]::ZeroFreeCoTaskMemUnicode($ptr)

@@ -11,24 +11,39 @@ $global:Entries = @()
 #     @{BlobPath = ""; SasToken = "" }
 # )
 
-$OSArchitecture = (Get-CimInstance -ClassName win32_operatingsystem).OSArchitecture
+function Get-OSArchitecture {
+    if (Get-Command "Get-CimInstance" -ErrorAction SilentlyContinue) {
+        return (Get-CimInstance -ClassName win32_operatingsystem).OSArchitecture
+    }
+    else {
+        return (Get-WmiObject Win32_OperatingSystem).OSArchitecture
+    }
+}
+
+$OSArchitecture = Get-OSArchitecture
+Write-Host "osarch: $($OSArchitecture)"
 $EzCopyDirectory = $env:LOCALAPPDATA + "\EzCopy\"
 $EzCopyDownloadPath = "https://raw.githubusercontent.com/js1016/EzCopy/main/EzCopy.ps1"
+$EzCopyDownloadPath2 = "http://joji.blob.core.windows.net/ezcopy/EzCopy.ps1"
 $EzCopySavePath = $EzCopyDirectory + "EzCopy.ps1"
 $AzCopyDownloadPath = "https://aka.ms/downloadazcopy-v10-windows-32bit"
+$AzCopyDownloadPath2 = "http://joji.blob.core.windows.net/ezcopy/azcopy_windows_386_10.15.0.zip"
 $AzCopySavePath = $EzCopyDirectory + "AzCopy.zip"
 if ($OSArchitecture.StartsWith("64")) {
     $AzCopyDownloadPath = "https://aka.ms/downloadazcopy-v10-windows"
+    $AzCopyDownloadPath2 = "http://joji.blob.core.windows.net/ezcopy/azcopy_windows_amd64_10.15.0.zip"
 }
-$PSCommand = "powershell"
+$PSCommand = "powershell.exe"
 if ($PSVersionTable.PSEdition -eq "Core") {
-    $PSCommand = "pwsh"
+    $PSCommand = "pwsh.exe"
 }
+$PSCommand = "$($PSHOME)\$($PSCommand)"
 
 function Get-RemoteResource {
     param(
         [string]$Url,
-        [string]$SavePath
+        [string]$SavePath,
+        [string]$Url2
     )
     $UseBitsTransfer = $true
     if (Get-Command "Start-BitsTransfer" -ErrorAction SilentlyContinue) {
@@ -38,9 +53,16 @@ function Get-RemoteResource {
         $UseBitsTransfer = $false
     }
     if (!(Test-Path $SavePath) -or !$UseBitsTransfer) {
-        [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+        try {
+            [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+            $wc = New-Object Net.WebClient
+            $wc.DownloadFile($Url, $SavePath)
+        }
+        catch {}
+    }
+    if (!(Test-Path $SavePath)) {
         $wc = New-Object Net.WebClient
-        $wc.DownloadFile($Url, $SavePath)
+        $wc.DownloadFile($Url2, $SavePath)
     }
 }
 
@@ -63,7 +85,7 @@ function Expand-ArchiveEx {
 
 function Get-AzCopy {
     Write-Host "Downloading AzCopy.exe to $($EzCopyDirectory)"
-    Get-RemoteResource -Url $AzCopyDownloadPath -SavePath $AzCopySavePath
+    Get-RemoteResource -Url $AzCopyDownloadPath -SavePath $AzCopySavePath -Url2 $AzCopyDownloadPath2
     Expand-ArchiveEx -Path $AzCopySavePath -DestinationPath $EzCopyDirectory -Force
     $findResult = Get-ChildItem -Path $EzCopyDirectory -Filter "azcopy.exe" -Recurse
     if ($findResult) {
@@ -97,7 +119,7 @@ function Get-AzCopy {
 
 function Get-EzCopy {
     Write-Host "Downloading EzCopy to $($EzCopyDirectory)"
-    Get-RemoteResource -Url $EzCopyDownloadPath -SavePath $EzCopySavePath
+    Get-RemoteResource -Url $EzCopyDownloadPath -SavePath $EzCopySavePath -Url2 $EzCopyDownloadPath2
 }
 
 function Uninstall-EzCopy {
