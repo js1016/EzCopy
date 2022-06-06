@@ -123,8 +123,26 @@ function Get-FileHashEx {
         Get-FileHash -Path $Path -Algorithm $Algorithm
     }
     else {
-        Write-Host "use fallback"
         Get-Hash -FilePath $Path -Algorithm $Algorithm
+    }
+}
+
+function Set-ClipboardEx {
+    param(
+        [string]$Value
+    )
+    $clipPath = $env:SystemRoot + "\System32\clip.exe"
+    if (Get-Command "Set-Clipboard" -ErrorAction SilentlyContinue) {
+        Set-Clipboard -Value $Value
+        return $true
+    }
+    elseif (Test-Path $clipPath) {
+        $expression = "'$($Value)' | $($clipPath)"
+        Invoke-Expression $expression
+        return $true
+    }
+    else {
+        return $false
     }
 }
 
@@ -244,14 +262,7 @@ for ($i = 0; $i -lt $lines.Count; $i++) {
 }
 
 if ($jobResult.FinalJobStatus -eq "Completed") {
-    $clipboardSet = $false
-    try {
-        Set-Clipboard -Value $UrlPath
-        $clipboardSet = $true
-    }
-    catch {
-        Write-Host "failed to set clipboard"
-    }
+    $clipboardSet = Set-ClipboardEx -Value $UrlPath
     Write-Host "File is copied successfully" -ForegroundColor "Green" -NoNewline
     if ($clipboardSet) {
         Write-Host ", the URL is already copied in clipboard: " -NoNewline

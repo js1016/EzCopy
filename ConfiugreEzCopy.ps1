@@ -53,7 +53,6 @@ function Expand-ArchiveEx {
         Expand-Archive -Path $Path -DestinationPath $DestinationPath
     }
     else {
-        Write-Host "polyfill needed"
         $shell = New-Object -ComObject Shell.Application
         $zip = $shell.NameSpace($Path)
         foreach ($item in $zip.items()) {
