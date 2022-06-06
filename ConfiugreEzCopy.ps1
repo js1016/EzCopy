@@ -21,7 +21,6 @@ function Get-OSArchitecture {
 }
 
 $OSArchitecture = Get-OSArchitecture
-Write-Host "osarch: $($OSArchitecture)"
 $EzCopyDirectory = $env:LOCALAPPDATA + "\EzCopy\"
 $EzCopyDownloadPath = "https://raw.githubusercontent.com/js1016/EzCopy/main/EzCopy.ps1"
 $EzCopyDownloadPath2 = "http://joji.blob.core.windows.net/ezcopy/EzCopy.ps1"
