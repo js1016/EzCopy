@@ -22,9 +22,8 @@ function Get-OSArchitecture {
 
 $OSArchitecture = Get-OSArchitecture
 $EzCopyDirectory = $env:LOCALAPPDATA + "\EzCopy\"
-$EzCopyDownloadPath = "https://raw.githubusercontent.com/js1016/EzCopy/main/EzCopy.ps1"
-$EzCopyDownloadPath2 = "http://joji.blob.core.windows.net/ezcopy/EzCopy.ps1"
-$EzCopySavePath = $EzCopyDirectory + "EzCopy.ps1"
+$EzCopyDownloadPath = "https://raw.githubusercontent.com/js1016/EzCopy/main/"
+$EzCopyDownloadPath2 = "http://joji.blob.core.windows.net/ezcopy/"
 $AzCopyDownloadPath = "https://aka.ms/downloadazcopy-v10-windows-32bit"
 $AzCopyDownloadPath2 = "http://joji.blob.core.windows.net/ezcopy/azcopy_windows_386_10.15.0.zip"
 $AzCopySavePath = $EzCopyDirectory + "AzCopy.zip"
@@ -118,7 +117,8 @@ function Get-AzCopy {
 
 function Get-EzCopy {
     Write-Host "Downloading EzCopy to $($EzCopyDirectory)"
-    Get-RemoteResource -Url $EzCopyDownloadPath -SavePath $EzCopySavePath -Url2 $EzCopyDownloadPath2
+    Get-RemoteResource -Url ($EzCopyDownloadPath + "/EzCopy.ps1") -SavePath ($EzCopySavePath + "EzCopy.ps1") -Url2 ($EzCopyDownloadPath2 + "/EzCopy.ps1")
+    #Get-RemoteResource -Url ($EzCopyDownloadPath + "/ConfigureEzCopy.ps1") -SavePath ($EzCopySavePath + "ConfigureEzCopy.ps1") -Url2 ($EzCopyDownloadPath2 + "/ConfigureEzCopy.ps1")
 }
 
 function Uninstall-EzCopy {
@@ -138,40 +138,90 @@ function Update-EzCopy {
 }
 
 function Install-EzCopy { 
-    Write-Host "Installing EzCopy..."
+    Write-Host "`nInstalling EzCopy..."
     New-Item -Path $env:LOCALAPPDATA -Name "EzCopy" -ItemType "Directory" -Force | Out-Null
     Get-AzCopy
     Get-EzCopy
     Set-EzCopy
 }
 
+function Write-Description {
+    param(
+        [string]$Description
+    )
+    Write-Host "`nDescription:        " -NoNewline
+    $wroteFirstLine = $false
+    $lines = $Description.Split("`n")
+    foreach ($line in $lines) {
+        if ($wroteFirstLine) {
+            Write-Host "`n                    " -NoNewline
+        }
+        else {
+            $wroteFirstLine = $true
+        }
+        if ($line.Length -gt 50) {
+            $words = $line.Split(' ')
+            $outputLength = 0;
+            $i = 0;
+            while ($outputLength -le 50 -and $i -lt $words.Length) {
+                Write-Host ($words[$i] + " ") -NoNewline
+                $outputLength += $words[$i].Length + 1
+                $i++
+                if ($outputLength -ge 50 -and $i -lt $words.Length) {
+                    Write-Host "`n                    " -NoNewline
+                    $outputLength = 0;
+                }
+            }
+        }
+        else {
+            Write-Host $line -NoNewline
+        }
+    }
+    Write-Host "`n"
+}
+
 function Set-EzCopy {
     if ($global:Entries.Count -eq 0) {
         $firstOrSecondOrThird = "first"
         $continue = $true
-        Write-Host "You can configure up to three different containers or paths as upload entries in context menu."
+        Write-Host "`nYou can configure up to three different upload paths in context menu."
         while ($continue) {
-            $blobPathUri = [uri](Read-Host -Prompt "Let's configure the $($firstOrSecondOrThird) upload entry, please input the default upload path (example: https://contoso.blob.core.windows.net/container/optionalpath/)")
+            Write-Host "`nLet's configure the $($firstOrSecondOrThird) upload entry, please input the upload path." -ForegroundColor Green
+            Write-Description "This will be the default upload path. You must specify the container or file share of your blob service and you can also specify an optional path of your container or file share.`n`nExamples:`n`n1. https://contoso.blob.core.windows.net/container/`n2. https://contoso.blob.core.windows.net/container/fileshare/`n3. https://joji.blob.core.windows.net/container/optionalpath"
+            Write-Host "Upload path: " -ForegroundColor Green -NoNewline
+            $blobPathUri = [uri](Read-Host)
             $blobPath = ""
             $testBlobPathResult = Test-BlobPath($blobPathUri)
             while ($testBlobPathResult.Length) {
-                Write-Host "Invalid upload path: $($testBlobPathResult)" -ForegroundColor Red
-                $blobPathUri = [uri](Read-Host -Prompt "Please input the default upload path")
+                Write-Host "`nInvalid upload path: $($testBlobPathResult)`n" -ForegroundColor Red
+                Write-Host "Upload path: " -ForegroundColor Green -NoNewline
+                $blobPathUri = [uri](Read-Host)
                 $testBlobPathResult = Test-BlobPath($blobPathUri)
             }
-            if ($blobPathUri.Query.Length) {
-                $blobPath = $blobPathUri.AbsoluteUri.Replace($blobPathUri.Query, "")
+            $blobPath = $blobPathUri.Scheme + "://" + $blobPathUri.Host
+            if (!$blobPathUri.IsDefaultPort) {
+                $blobPath += ":" + $blobPathUri.Port
             }
-            else {
-                $blobPath = $blobPathUri.AbsoluteUri.Replace($blobPathUri.AbsoluteUri.Substring($blobPathUri.AbsoluteUri.IndexOf("/", 8)), $blobPathUri.AbsolutePath)
-            }
+            $blobPath += $blobPathUri.LocalPath
             if (!$blobPath.EndsWith("/")) {
                 $blobPath = $blobPath += "/"
             }
-            $sasToken = Read-Host -Prompt "Please input the SAS token for the URL: $($blobPath)"
+            Write-Host "`nPlease input the SAS token of " -ForegroundColor Green -NoNewline
+            Write-Host $blobPath -ForegroundColor Yellow
+            Write-Description "A shared access signature (SAS) token is required for uploading file to the blob container or file share. You can generate the SAS token from Azure Portal. The SAS token will be saved with encryption on your local computer."
+            Write-Host "SAS Token: " -NoNewline -ForegroundColor Green
+            $sasToken = Read-Host
             $global:Entries += @{BlobPath = $blobPath; SasToken = $sasToken }
             if ($global:Entries.Count -lt 3) {
-                $continueInput = Read-Host -Prompt "Do you want to configure another upload entry? Please input (Y) or (N)"
+                Write-Host "`nDo you want to configure another upload entry?" -ForegroundColor Green
+                Write-Host "`nY: Yes, please."
+                Write-Host "N" -NoNewline -ForegroundColor Green
+                Write-Host ": No, I am good."
+                Write-Host "`nChoose from the menu: " -NoNewline -ForegroundColor Green
+                Write-Host "<Enter for " -NoNewline
+                Write-Host "N" -NoNewline -ForegroundColor Green
+                Write-Host ">" -NoNewline
+                $continueInput = Read-Host
                 if ($continueInput.ToLower() -eq "y") {
                     $continue = $true
                     if ($global:Entries.Count -eq 1) {
@@ -222,11 +272,11 @@ function Test-BlobPath {
         [uri] $blobPath
     )
     $testBlobPathResult = ""
-    if ($blobPath.LocalPath.Length -lt 2) {
-        $testBlobPathResult = "The upload path could not be your root blob URL, you need to specify the container in the path like: https://contoso.blob.core.windows.net/container/"
+    if ($blobPath.Scheme -ne "http" -and $blobPath.Scheme -ne "https") {
+        return "Upload path only supports HTTP/HTTPS protocol."
     }
-    elseif (!$blobPath.Scheme.StartsWith("http")) {
-        $testBlobPathResult = "The blob path should start with 'http'."
+    if ($blobPath.LocalPath.Length -lt 2) {
+        return "Upload path could not be your root blob URL, please specify the container or file share in the path."
     }
     return $testBlobPathResult
 }
@@ -234,7 +284,7 @@ function Test-BlobPath {
 if ($Install) {
     try {
         Install-EzCopy
-        Write-Host "EzCopy is installed successfully!" -ForegroundColor Green
+        Write-Host "`nEzCopy is installed successfully!`n" -ForegroundColor Green
     }
     catch {
         Write-Host "Installing EzCopy failed with error: $($_)" -ForegroundColor Red
@@ -244,7 +294,7 @@ if ($Install) {
 elseif ($Update) {
     try {
         Update-EzCopy
-        Write-Host "EzCopy is updated successfully!" -ForegroundColor Green
+        Write-Host "`nEzCopy is updated successfully!`n" -ForegroundColor Green
     }
     catch {
         Write-Host "Updating EzCopy failed with error: $($_)" -ForegroundColor Red
@@ -253,10 +303,10 @@ elseif ($Update) {
 }
 elseif ($Uninstall) {
     Uninstall-EzCopy
-    Write-Host "EzCopy is removed successfully!" -ForegroundColor Green
+    Write-Host "`nEzCopy is removed successfully!`n" -ForegroundColor Green
 }
 elseif ($Configure) {
     $global:Entries = @()
     Set-EzCopy
-    Write-Host "EzCopy is configured successfully!" -ForegroundColor Green
+    Write-Host "`nEzCopy is configured successfully!`n" -ForegroundColor Green
 }
