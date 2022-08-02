@@ -1,0 +1,25 @@
+name: Upload To Azure Blob Storage
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+        logLevel:
+            description: 'Log level'
+            required: true
+            default: 'warning'
+        tags:
+            description: ''
+jobs:
+  upload:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: bacongobbler/azure-blob-storage-upload@main
+        with:
+          source_dir: '.'
+          container_name: 'ezcopy'
+          connection_string: ${{ secrets.ConnectionString }}
+          extra_args: '--pattern *.ps1'
+          overwrite: 'true'

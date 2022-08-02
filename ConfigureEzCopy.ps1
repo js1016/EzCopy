@@ -25,11 +25,11 @@ $EzCopyDirectory = $env:LOCALAPPDATA + "\EzCopy\"
 $EzCopyDownloadPath = "https://raw.githubusercontent.com/js1016/EzCopy/main/"
 $EzCopyDownloadPath2 = "http://joji.blob.core.windows.net/ezcopy/"
 $AzCopyDownloadPath = "https://aka.ms/downloadazcopy-v10-windows-32bit"
-$AzCopyDownloadPath2 = "http://joji.blob.core.windows.net/ezcopy/azcopy_windows_386_10.15.0.zip"
+$AzCopyDownloadPath2 = "http://joji.blob.core.windows.net/ezcopy/azcopy_windows_386_10.16.0.zip"
 $AzCopySavePath = $EzCopyDirectory + "AzCopy.zip"
 if ($OSArchitecture.StartsWith("64")) {
     $AzCopyDownloadPath = "https://aka.ms/downloadazcopy-v10-windows"
-    $AzCopyDownloadPath2 = "http://joji.blob.core.windows.net/ezcopy/azcopy_windows_amd64_10.15.0.zip"
+    $AzCopyDownloadPath2 = "http://joji.blob.core.windows.net/ezcopy/azcopy_windows_amd64_10.16.0.zip"
 }
 $PSCommand = "powershell.exe"
 if ($PSVersionTable.PSEdition -eq "Core") {
@@ -118,7 +118,7 @@ function Get-AzCopy {
 function Get-EzCopy {
     Write-Host "Downloading EzCopy to $($EzCopyDirectory)"
     Get-RemoteResource -Url ($EzCopyDownloadPath + "/EzCopy.ps1") -SavePath ($EzCopySavePath + "EzCopy.ps1") -Url2 ($EzCopyDownloadPath2 + "/EzCopy.ps1")
-    #Get-RemoteResource -Url ($EzCopyDownloadPath + "/ConfigureEzCopy.ps1") -SavePath ($EzCopySavePath + "ConfigureEzCopy.ps1") -Url2 ($EzCopyDownloadPath2 + "/ConfigureEzCopy.ps1")
+    Get-RemoteResource -Url ($EzCopyDownloadPath + "/ConfigureEzCopy.ps1") -SavePath ($EzCopySavePath + "ConfigureEzCopy.ps1") -Url2 ($EzCopyDownloadPath2 + "/ConfigureEzCopy.ps1")
 }
 
 function Uninstall-EzCopy {
