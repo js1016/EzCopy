@@ -1,8 +1,8 @@
 # EzCopy
 
-EzCopy is a tiny utility that allows you to quickly copy files to Azure Blob Storage and Azure Files via context menu on Windows.
+EzCopy is a tiny utility that allows you to quickly copy files to [Azure Blob Storage](https://docs.microsoft.com/en-us/azure/storage/blobs/storage-blobs-introduction) and [Azure Files](https://docs.microsoft.com/en-us/azure/storage/files/storage-files-introduction) via context menu on Windows.
 
-![](https://joji.blob.core.windows.net/ezcopy/ezcopy.gif)
+https://user-images.githubusercontent.com/2356971/182543071-2dd3e343-6879-47bb-b4e9-a077c2896997.mp4
 
 You can configure up to three entries in context menu as default file upload paths. You just need to provide the upload path and its [SAS token](https://docs.microsoft.com/en-us/azure/storage/common/storage-sas-overview) during initial setup. EzCopy saves the upload path(s) in plain text and the encrypted SAS token(s) on your computer. Under the hood, EzCopy invokes [AzCopy](https://docs.microsoft.com/en-us/azure/storage/common/storage-use-azcopy-v10) to copy the file.
 ## Prerequisites
@@ -17,7 +17,7 @@ You can configure up to three entries in context menu as default file upload pat
 
 2. [Azure Blob Storage](https://docs.microsoft.com/en-us/azure/storage/blobs/storage-blobs-introduction) or [Azure Files](https://docs.microsoft.com/en-us/azure/storage/files/storage-files-introduction) is created.
 3. Running PowerShell script should be allowed. 
-4. You need to get an [SAS token]((https://docs.microsoft.com/en-us/azure/storage/common/storage-sas-overview)) that has the **Write** permission to the blob URL or the file share URL.
+4. You need to get an [SAS token](https://docs.microsoft.com/en-us/azure/storage/common/storage-sas-overview) that has the **Write** permission to the blob URL or the file share URL. See [Appendix: How to obtain the SAS token from Azure Portal?](#appendix-how-to-obtain-the-sas-token-from-azure-portal) for details.
 
 ## Install
 
@@ -36,17 +36,15 @@ Follow the instruction to finish installation.
 
 ![](https://joji.blob.core.windows.net/ezcopy/imgs/86C8C57414A7853D8A9BDB9ACA8ECD3D.png)
 
-If you get `running script is disabled` error, this means running PowerShell script is not allowed.
+If you get `running script is disabled` error, this means running PowerShell script is not enabled.
 
 ![](https://joji.blob.core.windows.net/ezcopy/imgs/2B20609DAFEB498790139779ADB6E755.png)
 
 You need to run PowerShell as administrator and run following command to allow running PowerShell script.
 
-```powershell
+```
 Set-ExecutionPolicy -ExecutionPolicy RemoteSigned
 ```
-
-![](https://joji.blob.core.windows.net/ezcopy/imgs/E894C3A8D79A1399CC189FC99D34395D.png)
 
 If you get `script is not digitally signed` error, then please unlock the file from its **Properties**.
 
@@ -56,23 +54,23 @@ If you get `script is not digitally signed` error, then please unlock the file f
 
 ## Update
 
-To update EzCopy, please launch PowerShell and execute: `& $env:LOCALAPPDATA\EzCopy\ConfigureEzCopy.ps1 -Update`
+To update EzCopy, please run:
 
 ```
-PS C:\>& $env:LOCALAPPDATA\EzCopy\ConfigureEzCopy.ps1 -Update
+& $env:LOCALAPPDATA\EzCopy\ConfigureEzCopy.ps1 -Update
 ```
 
 ## Re-configure
 
-If you want to re-configure the EzCopy upload entries, you can launch PowerShell and execute: `& $env:LOCALAPPDATA\EzCopy\ConfigureEzCopy.ps1 -Configure`
+If you want to re-configure the EzCopy upload entries, please run:
 
 ```
-PS C:\>& $env:LOCALAPPDATA\EzCopy\ConfigureEzCopy.ps1 -Configure
+& $env:LOCALAPPDATA\EzCopy\ConfigureEzCopy.ps1 -Configure
 ```
 
 ## Uninstall
 
-If you want to remove EzCopy, please launch PowerShell and execute: `& $env:LOCALAPPDATA\EzCopy\ConfigureEzCopy.ps1 -Uninstall`
+If you want to remove EzCopy, please run:
 
 ```
 PS C:\>& $env:LOCALAPPDATA\EzCopy\ConfigureEzCopy.ps1 -Uninstall
@@ -80,7 +78,7 @@ PS C:\>& $env:LOCALAPPDATA\EzCopy\ConfigureEzCopy.ps1 -Uninstall
 
 ## Appendix: How to obtain the SAS token from Azure Portal?
 
-1. For [Azure Blob Storage](https://docs.microsoft.com/en-us/azure/storage/blobs/storage-blobs-introduction) and [Azure Files](https://docs.microsoft.com/en-us/azure/storage/files/storage-files-introduction), you can go to the **Shared access signature** page of your stroage account and follow the tips below to obtain an SAS token.
+1. For [Azure Blob Storage](https://docs.microsoft.com/en-us/azure/storage/blobs/storage-blobs-introduction) and [Azure Files](https://docs.microsoft.com/en-us/azure/storage/files/storage-files-introduction), you can go to the **Shared access signature** page of your storage account and follow the tips below to obtain an SAS token.
 
    * Allowed services: choose **Blob** for Blob Storage, choose **File** for File Shares
    * Allowed resource types: **Object** must be selected
