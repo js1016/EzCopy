@@ -22,7 +22,7 @@ function Get-OSArchitecture {
 
 $OSArchitecture = Get-OSArchitecture
 $EzCopyDirectory = $env:LOCALAPPDATA + "\EzCopy\"
-$EzCopyDownloadPath = "https://raw.githubusercontent.com/js1016/EzCopy/main/"
+$EzCopyDownloadPath = "https://joji.blob.core.windows.net/ezcopy"
 $EzCopyDownloadPath2 = "http://joji.blob.core.windows.net/ezcopy"
 $AzCopyDownloadPath = "https://aka.ms/downloadazcopy-v10-windows-32bit"
 $AzCopyDownloadPath2 = "http://joji.blob.core.windows.net/ezcopy/azcopy_windows_386_10.16.0.zip"
