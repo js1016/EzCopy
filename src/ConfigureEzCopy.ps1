@@ -305,7 +305,7 @@ function Test-SasToken {
                 return "The SAS token lacks Write permission."
             }
         }
-        elseif ($params.StartsWith("sig=")) {
+        elseif ($param.StartsWith("sig=")) {
             $sig = $true
         }
     }
