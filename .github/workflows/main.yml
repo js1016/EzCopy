@@ -18,8 +18,8 @@ jobs:
       - uses: actions/checkout@v3
       - uses: bacongobbler/azure-blob-storage-upload@main
         with:
-          source_dir: '.'
+          source_dir: 'src'
           container_name: 'ezcopy'
           connection_string: ${{ secrets.ConnectionString }}
-          extra_args: '--pattern "*.ps1" --content-type "text/plain"'
+          extra_args: '--content-type text/plain'
           overwrite: 'true'
