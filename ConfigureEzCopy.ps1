@@ -23,7 +23,7 @@ function Get-OSArchitecture {
 $OSArchitecture = Get-OSArchitecture
 $EzCopyDirectory = $env:LOCALAPPDATA + "\EzCopy\"
 $EzCopyDownloadPath = "https://raw.githubusercontent.com/js1016/EzCopy/main/"
-$EzCopyDownloadPath2 = "http://joji.blob.core.windows.net/ezcopy/"
+$EzCopyDownloadPath2 = "http://joji.blob.core.windows.net/ezcopy"
 $AzCopyDownloadPath = "https://aka.ms/downloadazcopy-v10-windows-32bit"
 $AzCopyDownloadPath2 = "http://joji.blob.core.windows.net/ezcopy/azcopy_windows_386_10.16.0.zip"
 $AzCopySavePath = $EzCopyDirectory + "AzCopy.zip"
@@ -36,6 +36,7 @@ if ($PSVersionTable.PSEdition -eq "Core") {
     $PSCommand = "pwsh.exe"
 }
 $PSCommand = "$($PSHOME)\$($PSCommand)"
+$PreConfigured = if ($global:Entries.Length -gt 0) { $true }else { $false }
 
 function Get-RemoteResource {
     param(
@@ -56,7 +57,8 @@ function Get-RemoteResource {
             $wc = New-Object Net.WebClient
             $wc.DownloadFile($Url, $SavePath)
         }
-        catch {}
+        catch {
+        }
     }
     if (!(Test-Path $SavePath)) {
         $wc = New-Object Net.WebClient
@@ -117,8 +119,8 @@ function Get-AzCopy {
 
 function Get-EzCopy {
     Write-Host "Downloading EzCopy to $($EzCopyDirectory)"
-    Get-RemoteResource -Url ($EzCopyDownloadPath + "/EzCopy.ps1") -SavePath ($EzCopySavePath + "EzCopy.ps1") -Url2 ($EzCopyDownloadPath2 + "/EzCopy.ps1")
-    Get-RemoteResource -Url ($EzCopyDownloadPath + "/ConfigureEzCopy.ps1") -SavePath ($EzCopySavePath + "ConfigureEzCopy.ps1") -Url2 ($EzCopyDownloadPath2 + "/ConfigureEzCopy.ps1")
+    Get-RemoteResource -Url ($EzCopyDownloadPath + "/EzCopy.ps1") -SavePath ($EzCopyDirectory + "EzCopy.ps1") -Url2 ($EzCopyDownloadPath2 + "/EzCopy.ps1")
+    Get-RemoteResource -Url ($EzCopyDownloadPath + "/ConfigureEzCopy.ps1") -SavePath ($EzCopyDirectory + "ConfigureEzCopy.ps1") -Url2 ($EzCopyDownloadPath2 + "/ConfigureEzCopy.ps1")
 }
 
 function Uninstall-EzCopy {
@@ -138,7 +140,7 @@ function Update-EzCopy {
 }
 
 function Install-EzCopy { 
-    Write-Host "`nInstalling EzCopy..."
+    Write-Host "Installing EzCopy..."
     New-Item -Path $env:LOCALAPPDATA -Name "EzCopy" -ItemType "Directory" -Force | Out-Null
     Get-AzCopy
     Get-EzCopy
@@ -187,7 +189,7 @@ function Set-EzCopy {
         Write-Host "`nYou can configure up to three different upload paths in context menu."
         while ($continue) {
             Write-Host "`nLet's configure the $($firstOrSecondOrThird) upload entry, please input the upload path." -ForegroundColor Green
-            Write-Description "This will be the default upload path. You must specify the container or file share of your blob service and you can also specify an optional path of your container or file share.`n`nExamples:`n`n1. https://contoso.blob.core.windows.net/container/`n2. https://contoso.blob.core.windows.net/container/fileshare/`n3. https://joji.blob.core.windows.net/container/optionalpath"
+            Write-Description "This will be the default upload path. You must specify the container or file share of your blob service and you can also specify an optional path of your container or file share.`n`nExamples:`n`n1. https://contoso.blob.core.windows.net/container/`n2. https://contoso.file.core.windows.net/fileshare/`n3. https://contoso.blob.core.windows.net/container/optionalpath"
             Write-Host "Upload path: " -ForegroundColor Green -NoNewline
             $blobPathUri = [uri](Read-Host)
             $blobPath = ""
@@ -211,6 +213,13 @@ function Set-EzCopy {
             Write-Description "A shared access signature (SAS) token is required for uploading file to the blob container or file share. You can generate the SAS token from Azure Portal. The SAS token will be saved with encryption on your local computer."
             Write-Host "SAS Token: " -NoNewline -ForegroundColor Green
             $sasToken = Read-Host
+            $testSasTokenResult = Test-SasToken($sasToken)
+            while ($testSasTokenResult.Length) {
+                Write-Host "`n$($testSasTokenResult)`n" -ForegroundColor Red
+                Write-Host "SAS Token: " -NoNewline -ForegroundColor Green
+                $sasToken = Read-Host
+                $testSasTokenResult = Test-SasToken($sasToken)
+            }
             $global:Entries += @{BlobPath = $blobPath; SasToken = $sasToken }
             if ($global:Entries.Count -lt 3) {
                 Write-Host "`nDo you want to configure another upload entry?" -ForegroundColor Green
@@ -220,7 +229,7 @@ function Set-EzCopy {
                 Write-Host "`nChoose from the menu: " -NoNewline -ForegroundColor Green
                 Write-Host "<Enter for " -NoNewline
                 Write-Host "N" -NoNewline -ForegroundColor Green
-                Write-Host ">" -NoNewline
+                Write-Host "> " -NoNewline
                 $continueInput = Read-Host
                 if ($continueInput.ToLower() -eq "y") {
                     $continue = $true
@@ -239,6 +248,9 @@ function Set-EzCopy {
                 $continue = $false
             }
         }
+    }
+    if ($PreConfigured) {
+        Write-Host "`n" -NoNewline
     }
     Remove-Item -LiteralPath "HKCU:\SOFTWARE\Classes\*\shell\EzCopy" -Force -Recurse -ErrorAction SilentlyContinue
     New-Item "HKCU:\SOFTWARE\Classes\*\shell\EzCopy\" -Force | Out-Null
@@ -263,8 +275,46 @@ function Set-EzCopy {
         Set-ItemProperty -LiteralPath "$($entryRegPath)shell\3\command" -Name "(Default)" -Type "ExpandString" -Value "$($PSCommand) -File %localappdata%\\EzCopy\\EzCopy.ps1 -FilePath ""%1"" -BlobPath ""$($entry.BlobPath)"" -FileHash sha256"
         Set-ItemProperty -LiteralPath "$($entryRegPath)shell\4\command" -Name "(Default)" -Type "ExpandString" -Value "$($PSCommand) -File %localappdata%\\EzCopy\\EzCopy.ps1 -FilePath ""%1"" -BlobPath ""$($entry.BlobPath)"" -Custom"
         $sasFileContent += "$($entry.BlobPath) $($entry.SasToken | ConvertTo-SecureString -AsPlainText -Force | ConvertFrom-SecureString)`n"
+        if ($PreConfigured) {
+            Write-Host "EzCopy entry: $($entry.BlobPath) was configured." -ForegroundColor Green
+        }
     }
     New-Item -Path $EzCopyDirectory"sas.txt" -ItemType "File" -Value $sasFileContent -Force | Out-Null
+}
+
+function Test-SasToken {
+    param(
+        [string] $sasToken
+    )
+    if ($sasToken.StartsWith("?")) {
+        $sasToken = $sasToken.Substring(1)
+    }
+    $params = $sasToken.Split("&")
+    $sv = $se = $sp = $sig = $false
+    foreach ($param in $params) {
+        $param = $param.ToLower();
+        if ($param.StartsWith("sv=")) {
+            $sv = $true
+        }
+        elseif ($param.StartsWith("se=")) {
+            $se = $true
+        }
+        elseif ($param.StartsWith("sp=")) {
+            $sp = $true
+            if (!$param.Contains("w")) {
+                return "The SAS token lacks Write permission."
+            }
+        }
+        elseif ($params.StartsWith("sig=")) {
+            $sig = $true
+        }
+    }
+    if ($sv -and $se -and $sp -and $sig) {
+        return ""
+    }
+    else {
+        return "Invalid SAS token."
+    }
 }
 
 function Test-BlobPath {
@@ -280,6 +330,8 @@ function Test-BlobPath {
     }
     return $testBlobPathResult
 }
+
+Write-Host ""
 
 if ($Install) {
     try {
@@ -309,4 +361,9 @@ elseif ($Configure) {
     $global:Entries = @()
     Set-EzCopy
     Write-Host "`nEzCopy is configured successfully!`n" -ForegroundColor Green
+}
+
+if ($PreConfigured) {
+    $ScriptPath = if ($PSCommandPath -ne $null) { $PSCommandPath }else { $MyInvocation.MyCommand.Definition }
+    Remove-Item -LiteralPath $ScriptPath -Force
 }

@@ -21,5 +21,5 @@ jobs:
           source_dir: '.'
           container_name: 'ezcopy'
           connection_string: ${{ secrets.ConnectionString }}
-          extra_args: '--pattern "*.ps1"'
+          extra_args: '--pattern "*.ps1" --content-type "text/plain"'
           overwrite: 'true'
