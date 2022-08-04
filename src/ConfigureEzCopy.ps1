@@ -333,7 +333,7 @@ function Test-BlobPath {
 
 Write-Host ""
 
-if ($Install) {
+if ($Install -or $PreConfigured) {
     try {
         Install-EzCopy
         Write-Host "`nEzCopy is installed successfully!`n" -ForegroundColor Green
