@@ -37,7 +37,14 @@ if ($PSVersionTable.PSEdition -eq "Core") {
 }
 $PSCommand = "$($PSHOME)\$($PSCommand)"
 $PreConfigured = if ($global:Entries.Length -gt 0) { $true }else { $false }
-
+$CommandLineArgs = [System.Environment]::GetCommandLineArgs()
+$SciprtExecuteViaFile = $false
+for ($i = 0; $i -lt $CommandLineArgs.Length; $i++) {
+    if ($CommandLineArgs[$i].ToLower() -eq "-file") {
+        $SciprtExecuteViaFile = $true
+        break
+    }
+}
 function Get-RemoteResource {
     param(
         [string]$Url,
@@ -342,6 +349,10 @@ if ($Install -or $PreConfigured) {
         Write-Host "Installing EzCopy failed with error: $($_)" -ForegroundColor Red
         Write-Host "ScriptStackTrace: `n$($_.ScriptStackTrace)" -ForegroundColor Red
     }
+    if ($PreConfigured) {
+        $ScriptPath = if ($PSCommandPath -ne $null) { $PSCommandPath }else { $MyInvocation.MyCommand.Definition }
+        Remove-Item -LiteralPath $ScriptPath -Force
+    }
 }
 elseif ($Update) {
     try {
@@ -363,7 +374,7 @@ elseif ($Configure) {
     Write-Host "`nEzCopy is configured successfully!`n" -ForegroundColor Green
 }
 
-if ($PreConfigured) {
-    $ScriptPath = if ($PSCommandPath -ne $null) { $PSCommandPath }else { $MyInvocation.MyCommand.Definition }
-    Remove-Item -LiteralPath $ScriptPath -Force
+if ($SciprtExecuteViaFile) {
+    Write-Host "Press any key to exit: " -NoNewline
+    Read-Host
 }
