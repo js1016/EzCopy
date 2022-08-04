@@ -38,10 +38,10 @@ if ($PSVersionTable.PSEdition -eq "Core") {
 $PSCommand = "$($PSHOME)\$($PSCommand)"
 $PreConfigured = if ($global:Entries.Length -gt 0) { $true }else { $false }
 $CommandLineArgs = [System.Environment]::GetCommandLineArgs()
-$SciprtExecuteViaFile = $false
+$SciprtExecuteViaFileOrCommand = $false
 for ($i = 0; $i -lt $CommandLineArgs.Length; $i++) {
-    if ($CommandLineArgs[$i].ToLower() -eq "-file") {
-        $SciprtExecuteViaFile = $true
+    if ($CommandLineArgs[$i].ToLower() -eq "-file" -or $CommandLineArgs[$i].ToLower() -eq "-command") {
+        $SciprtExecuteViaFileOrCommand = $true
         break
     }
 }
@@ -374,7 +374,7 @@ elseif ($Configure) {
     Write-Host "`nEzCopy is configured successfully!`n" -ForegroundColor Green
 }
 
-if ($SciprtExecuteViaFile) {
+if ($SciprtExecuteViaFileOrCommand) {
     Write-Host "Press any key to exit: " -NoNewline
     Read-Host
 }
