@@ -2,9 +2,16 @@
 
 EzCopy is a tiny utility that allows you to quickly copy files to [Azure Blob Storage](https://docs.microsoft.com/en-us/azure/storage/blobs/storage-blobs-introduction) and [Azure Files](https://docs.microsoft.com/en-us/azure/storage/files/storage-files-introduction) via context menu on Windows.
 
-https://user-images.githubusercontent.com/2356971/182543071-2dd3e343-6879-47bb-b4e9-a077c2896997.mp4
-
 You can configure up to three entries in context menu as default file upload paths. You just need to provide the upload path and its [SAS token](https://docs.microsoft.com/en-us/azure/storage/common/storage-sas-overview) during initial setup. EzCopy saves the upload path(s) in plain text and the encrypted SAS token(s) on your computer. Under the hood, EzCopy invokes [AzCopy](https://docs.microsoft.com/en-us/azure/storage/common/storage-use-azcopy-v10) to copy the file.
+
+![](https://joji.blob.core.windows.net/ezcopy/imgs/ezcopy-context-menu.png)
+
+![](https://joji.blob.core.windows.net/ezcopy/imgs/ezcopy-quick-copy.png)
+
+EzCopy also supports customized upload path and file name:
+
+![](https://joji.blob.core.windows.net/ezcopy/imgs/ezcopy-customized-path.png)
+
 ## Prerequisites
 
 1. EzCopy supports following Windows versions.
@@ -21,7 +28,7 @@ You can configure up to three entries in context menu as default file upload pat
 
 ## Install
 
-Download [`ConfigureEzCopy.ps1`](https://github.com/js1016/EzCopy/releases/download/v1.0.0/ConfigureEzCopy.ps1) and launch PowerShell.
+Download [`ConfigureEzCopy.ps1`](https://github.com/js1016/EzCopy/releases/download/v1.0.1/ConfigureEzCopy.ps1) and launch PowerShell.
 
 1. EzCopy supports both the Windows built-in PowerShell (powershell.exe) and the cross-platform PowerShell (pwsh.exe).
 2. You don't have to run the PowerShell as administrator, just run it as the user that you want to have the EzCopy context menu.
@@ -34,11 +41,11 @@ CD to the folder where you saved `ConfigureEzCopy.ps1` and run below command to 
 
 Follow the instruction to finish installation.
 
-![](https://joji.blob.core.windows.net/ezcopy/imgs/86C8C57414A7853D8A9BDB9ACA8ECD3D.png)
+![](https://joji.blob.core.windows.net/ezcopy/imgs/ezcopy-install.png)
 
 If you get `running script is disabled` error, this means running PowerShell script is not enabled.
 
-![](https://joji.blob.core.windows.net/ezcopy/imgs/2B20609DAFEB498790139779ADB6E755.png)
+![](https://joji.blob.core.windows.net/ezcopy/imgs/ezcopy-script-disabled.png)
 
 You need to run PowerShell as administrator and run following command to allow running PowerShell script.
 
@@ -48,9 +55,9 @@ Set-ExecutionPolicy -ExecutionPolicy RemoteSigned
 
 If you get `script is not digitally signed` error, then please unlock the file from its **Properties**.
 
-![](https://joji.blob.core.windows.net/ezcopy/imgs/A6B5952756685688908E39A15F99FB55.png)
+![](https://joji.blob.core.windows.net/ezcopy/imgs/ezcopy-script-not-signed.png)
 
-![](https://joji.blob.core.windows.net/ezcopy/imgs/7C51A1EA290E36E95F68047911F55A1B.png)
+![](https://joji.blob.core.windows.net/ezcopy/imgs/ezcopy-unlock-script.png)
 
 ## Update
 
@@ -73,7 +80,7 @@ If you want to re-configure the EzCopy upload entries, please run:
 If you want to remove EzCopy, please run:
 
 ```
-PS C:\>& $env:LOCALAPPDATA\EzCopy\ConfigureEzCopy.ps1 -Uninstall
+& $env:LOCALAPPDATA\EzCopy\ConfigureEzCopy.ps1 -Uninstall
 ```
 
 ## Appendix: How to obtain the SAS token from Azure Portal?
