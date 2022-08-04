@@ -125,7 +125,7 @@ function Get-EzCopy {
 
 function Uninstall-EzCopy {
     Remove-Item -LiteralPath $EzCopyDirectory -Recurse -Force -ErrorAction SilentlyContinue | Out-Null
-    Remove-Item -LiteralPath "HKCU:\SOFTWARE\Classes\*\shell\EzCopy" -Force -Recurse
+    Remove-Item -LiteralPath "HKCU:\SOFTWARE\Classes\*\shell\EzCopy" -Force -Recurse -ErrorAction SilentlyContinue | Out-Null
 }
 
 function Update-EzCopy {
