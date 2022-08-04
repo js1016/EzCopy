@@ -355,7 +355,7 @@ elseif ($Update) {
 }
 elseif ($Uninstall) {
     Uninstall-EzCopy
-    Write-Host "`nEzCopy is removed successfully!`n" -ForegroundColor Green
+    Write-Host "EzCopy is removed successfully!`n" -ForegroundColor Green
 }
 elseif ($Configure) {
     $global:Entries = @()
