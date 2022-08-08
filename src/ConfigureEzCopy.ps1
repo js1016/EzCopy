@@ -37,14 +37,8 @@ if ($PSVersionTable.PSEdition -eq "Core") {
 }
 $PSCommand = "$($PSHOME)\$($PSCommand)"
 $PreConfigured = if ($global:Entries.Length -gt 0) { $true }else { $false }
-$CommandLineArgs = [System.Environment]::GetCommandLineArgs()
-$SciprtExecuteViaFileOrCommand = $false
-for ($i = 0; $i -lt $CommandLineArgs.Length; $i++) {
-    if ($CommandLineArgs[$i].ToLower() -eq "-file" -or $CommandLineArgs[$i].ToLower() -eq "-command") {
-        $SciprtExecuteViaFileOrCommand = $true
-        break
-    }
-}
+$ParentPID = (gwmi win32_process -Filter "processid='$PID'").ParentProcessId
+$ParentProcessName = (gwmi win32_process -Filter "processid='$ParentPID'").ProcessName.ToLower()
 function Get-RemoteResource {
     param(
         [string]$Url,
@@ -277,10 +271,10 @@ function Set-EzCopy {
         New-ItemProperty -LiteralPath "$($entryRegPath)shell\2\" -Name "MUIVerb" -Value "Use MD5 hash as file name" -Force | Out-Null
         New-ItemProperty -LiteralPath "$($entryRegPath)shell\3\" -Name "MUIVerb" -Value "Use SHA256 hash as file name" -Force | Out-Null
         New-ItemProperty -LiteralPath "$($entryRegPath)shell\4\" -Name "MUIVerb" -Value "Customize path and file name" -Force | Out-Null
-        Set-ItemProperty -LiteralPath "$($entryRegPath)shell\1\command" -Name "(Default)" -Type "ExpandString" -Value "$($PSCommand) -File %localappdata%\\EzCopy\\EzCopy.ps1 -FilePath ""%1"" -BlobPath ""$($entry.BlobPath)"""
-        Set-ItemProperty -LiteralPath "$($entryRegPath)shell\2\command" -Name "(Default)" -Type "ExpandString" -Value "$($PSCommand) -File %localappdata%\\EzCopy\\EzCopy.ps1 -FilePath ""%1"" -BlobPath ""$($entry.BlobPath)"" -FileHash md5"
-        Set-ItemProperty -LiteralPath "$($entryRegPath)shell\3\command" -Name "(Default)" -Type "ExpandString" -Value "$($PSCommand) -File %localappdata%\\EzCopy\\EzCopy.ps1 -FilePath ""%1"" -BlobPath ""$($entry.BlobPath)"" -FileHash sha256"
-        Set-ItemProperty -LiteralPath "$($entryRegPath)shell\4\command" -Name "(Default)" -Type "ExpandString" -Value "$($PSCommand) -File %localappdata%\\EzCopy\\EzCopy.ps1 -FilePath ""%1"" -BlobPath ""$($entry.BlobPath)"" -Custom"
+        Set-ItemProperty -LiteralPath "$($entryRegPath)shell\1\command" -Name "(Default)" -Type "ExpandString" -Value "$($PSCommand) -Command ""try{Set-ExecutionPolicy -Force -Scope Process Bypass}catch{}; & %localappdata%\\EzCopy\\EzCopy.ps1 -FilePath ""%1"" -BlobPath ""$($entry.BlobPath)"""""
+        Set-ItemProperty -LiteralPath "$($entryRegPath)shell\2\command" -Name "(Default)" -Type "ExpandString" -Value "$($PSCommand) -Command ""try{Set-ExecutionPolicy -Force -Scope Process Bypass}catch{}; & %localappdata%\\EzCopy\\EzCopy.ps1 -FilePath ""%1"" -BlobPath ""$($entry.BlobPath)"""" -FileHash md5"
+        Set-ItemProperty -LiteralPath "$($entryRegPath)shell\3\command" -Name "(Default)" -Type "ExpandString" -Value "$($PSCommand) -Command ""try{Set-ExecutionPolicy -Force -Scope Process Bypass}catch{}; & %localappdata%\\EzCopy\\EzCopy.ps1 -FilePath ""%1"" -BlobPath ""$($entry.BlobPath)"""" -FileHash sha256"
+        Set-ItemProperty -LiteralPath "$($entryRegPath)shell\4\command" -Name "(Default)" -Type "ExpandString" -Value "$($PSCommand) -Command ""try{Set-ExecutionPolicy -Force -Scope Process Bypass}catch{}; & %localappdata%\\EzCopy\\EzCopy.ps1 -FilePath ""%1"" -BlobPath ""$($entry.BlobPath)"""" -Custom"
         $sasFileContent += "$($entry.BlobPath) $($entry.SasToken | ConvertTo-SecureString -AsPlainText -Force | ConvertFrom-SecureString)`n"
         if ($PreConfigured) {
             Write-Host "EzCopy entry: $($entry.BlobPath) was configured." -ForegroundColor Green
@@ -374,7 +368,7 @@ elseif ($Configure) {
     Write-Host "`nEzCopy is configured successfully!`n" -ForegroundColor Green
 }
 
-if ($SciprtExecuteViaFileOrCommand) {
+if ($ParentProcessName -ne "cmd.exe" -and $ParentProcessName -ne "pwsh.exe" -and $ParentProcessName -ne "powershell.exe" ) {
     Write-Host "Press any key to exit: " -NoNewline
-    Read-Host
+    $host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown") | Out-Null
 }
