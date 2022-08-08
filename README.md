@@ -28,43 +28,34 @@ EzCopy also supports customized upload path and file name:
 
 ## Install
 
-Download [`ConfigureEzCopy.ps1`](https://github.com/js1016/EzCopy/releases/download/v1.0.1/ConfigureEzCopy.ps1) and launch PowerShell.
+Download [`ConfigureEzCopy.ps1`](https://github.com/js1016/EzCopy/releases/download/v1.0.1/ConfigureEzCopy.ps1) and run following command from a Run dialog or Command Prompt:
 
-1. EzCopy supports both the Windows built-in PowerShell (powershell.exe) and the cross-platform PowerShell (pwsh.exe).
-2. You don't have to run the PowerShell as administrator, just run it as the user that you want to have the EzCopy context menu.
-
-CD to the folder where you saved `ConfigureEzCopy.ps1` and run below command to install EzCopy:
-
-```powershell
-.\ConfigureEzCopy.ps1 -Install
+If you want to use the Windows built-in PowerShell to run EzCopy, run:
+```
+powershell -command "try{Set-ExecutionPolicy -Force -Scope Process Bypass}catch{}; & %userprofile%\Downloads\ConfigureEzCopy.ps1 -Install"
 ```
 
-Follow the instruction to finish installation.
+If you want to use the cross-platform PowerShell to run EzCopy, run:
+```
+pwsh -command "try{Set-ExecutionPolicy -Force -Scope Process Bypass}catch{}; & %userprofile%\Downloads\ConfigureEzCopy.ps1 -Install"
+```
+
+**NOTE**: If your default download path isn't `%userprofile%\Downloads`, then you need to replace it with the actual download path.
+
+Then follow the instruction to finish installation.
 
 ![](https://joji.blob.core.windows.net/ezcopy/imgs/ezcopy-install.png)
-
-If you get `running script is disabled` error, this means running PowerShell script is not enabled.
-
-![](https://joji.blob.core.windows.net/ezcopy/imgs/ezcopy-script-disabled.png)
-
-You need to run PowerShell as administrator and run following command to allow running PowerShell script.
-
-```
-Set-ExecutionPolicy -ExecutionPolicy RemoteSigned
-```
-
-If you get `script is not digitally signed` error, then please unlock the file from its **Properties**.
-
-![](https://joji.blob.core.windows.net/ezcopy/imgs/ezcopy-script-not-signed.png)
-
-![](https://joji.blob.core.windows.net/ezcopy/imgs/ezcopy-unlock-script.png)
 
 ## Update
 
 To update EzCopy, please run:
 
 ```
-& $env:LOCALAPPDATA\EzCopy\ConfigureEzCopy.ps1 -Update
+powershell -command "try{Set-ExecutionPolicy -Force -Scope Process Bypass}catch{}; & %localappdata%\EzCopy\ConfigureEzCopy.ps1 -Update"
+```
+or
+```
+pwsh -command "try{Set-ExecutionPolicy -Force -Scope Process Bypass}catch{}; & %localappdata%\EzCopy\ConfigureEzCopy.ps1 -Update"
 ```
 
 ## Re-configure
@@ -72,7 +63,11 @@ To update EzCopy, please run:
 If you want to re-configure the EzCopy upload entries, please run:
 
 ```
-& $env:LOCALAPPDATA\EzCopy\ConfigureEzCopy.ps1 -Configure
+powershell -command "try{Set-ExecutionPolicy -Force -Scope Process Bypass}catch{}; & %localappdata%\EzCopy\ConfigureEzCopy.ps1 -Configure"
+```
+or
+```
+pwsh -command "try{Set-ExecutionPolicy -Force -Scope Process Bypass}catch{}; & %localappdata%\EzCopy\ConfigureEzCopy.ps1 -Configure"
 ```
 
 ## Uninstall
@@ -80,7 +75,11 @@ If you want to re-configure the EzCopy upload entries, please run:
 If you want to remove EzCopy, please run:
 
 ```
-& $env:LOCALAPPDATA\EzCopy\ConfigureEzCopy.ps1 -Uninstall
+powershell -command "try{Set-ExecutionPolicy -Force -Scope Process Bypass}catch{}; & %localappdata%\EzCopy\ConfigureEzCopy.ps1 -Uninstall"
+```
+or
+```
+pwsh -command "try{Set-ExecutionPolicy -Force -Scope Process Bypass}catch{}; & %localappdata%\EzCopy\ConfigureEzCopy.ps1 -Uninstall"
 ```
 
 ## Appendix: How to obtain the SAS token from Azure Portal?
