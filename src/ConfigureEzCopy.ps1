@@ -37,8 +37,14 @@ if ($PSVersionTable.PSEdition -eq "Core") {
 }
 $PSCommand = "$($PSHOME)\$($PSCommand)"
 $PreConfigured = if ($global:Entries.Length -gt 0) { $true }else { $false }
-$ParentPID = (gwmi win32_process -Filter "processid='$PID'").ParentProcessId
-$ParentProcessName = (gwmi win32_process -Filter "processid='$ParentPID'").ProcessName.ToLower()
+if (Get-Command "Get-WmiObject" -ErrorAction SilentlyContinue) {
+    $ParentPID = (Get-WmiObject win32_process -Filter "processid='$PID'").ParentProcessId
+    $ParentProcessName = (Get-WmiObject win32_process -Filter "processid='$ParentPID'").ProcessName.ToLower()
+}
+else {
+    $ParentPID = (Get-CimInstance -ClassName Win32_Process -Filter "processid='$PID'").ParentProcessId
+    $ParentProcessName = (Get-CimInstance -ClassName Win32_Process -Filter "processid='$ParentPID'").ProcessName.ToLower()
+}
 function Get-RemoteResource {
     param(
         [string]$Url,
