@@ -23,8 +23,7 @@ EzCopy also supports customized upload path and file name:
    * Windows 11
 
 2. [Azure Blob Storage](https://docs.microsoft.com/en-us/azure/storage/blobs/storage-blobs-introduction) or [Azure Files](https://docs.microsoft.com/en-us/azure/storage/files/storage-files-introduction) is created.
-3. Running PowerShell script should be allowed. 
-4. You need to get an [SAS token](https://docs.microsoft.com/en-us/azure/storage/common/storage-sas-overview) that has the **Write** permission to the blob URL or the file share URL. See [Appendix: How to obtain the SAS token from Azure Portal?](#appendix-how-to-obtain-the-sas-token-from-azure-portal) for details.
+3. You need to get an [SAS token](https://docs.microsoft.com/en-us/azure/storage/common/storage-sas-overview) that has the **Write** permission to the blob URL or the file share URL. See [Appendix: How to obtain the SAS token from Azure Portal?](#appendix-how-to-obtain-the-sas-token-from-azure-portal) for details.
 
 ## Install
 
