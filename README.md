@@ -1,6 +1,6 @@
 # EzCopy
 
-EzCopy is a tiny utility that allows you to quickly copy files to [Azure Blob Storage](https://docs.microsoft.com/en-us/azure/storage/blobs/storage-blobs-introduction) and [Azure Files](https://docs.microsoft.com/en-us/azure/storage/files/storage-files-introduction) via context menu on Windows.
+EzCopy is a tiny utility that allows you to quickly copy files to [Azure Blob Storage](https://docs.microsoft.com/en-us/azure/storage/blobs/storage-blobs-introduction) and [Azure Files](https://docs.microsoft.com/en-us/azure/storage/files/storage-files-introduction) via context menu on Windows. Try [EzCopy Web install](https://ezcopy.joji.me/#install).
 
 You can configure up to three entries in context menu as default file upload paths. You just need to provide the upload path and its [SAS token](https://docs.microsoft.com/en-us/azure/storage/common/storage-sas-overview) during initial setup. EzCopy saves the upload path(s) in plain text and the encrypted SAS token(s) on your computer. Under the hood, EzCopy invokes [AzCopy](https://docs.microsoft.com/en-us/azure/storage/common/storage-use-azcopy-v10) to copy the file.
 
@@ -26,7 +26,10 @@ EzCopy also supports customized upload path and file name:
 3. Running PowerShell script should be allowed. 
 4. You need to get an [SAS token](https://docs.microsoft.com/en-us/azure/storage/common/storage-sas-overview) that has the **Write** permission to the blob URL or the file share URL. See [Appendix: How to obtain the SAS token from Azure Portal?](#appendix-how-to-obtain-the-sas-token-from-azure-portal) for details.
 
-## Install
+## Install from web
+
+The easiest way to install EzCopy is via web: <https://ezcopy.joji.me/#install>. You just need to input the upload path(s) and SAS token(s), then the website will generate the setup script. The upload path(s) and SAS token(s) will not be sent to backend server, they are just used by the script running in your browser to generate the setup script.
+## Manual install
 
 Download [`ConfigureEzCopy.ps1`](https://github.com/js1016/EzCopy/releases/download/v1.0.1/ConfigureEzCopy.ps1) and run following command from a Run dialog or Command Prompt:
 
